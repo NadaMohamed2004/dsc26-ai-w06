@@ -1,18 +1,31 @@
-"""MCP server exposing Hisn's three tools. You write this file (mcp 2.2.0, the v2 SDK)."""
-from __future__ import annotations
+"""MCP server exposing the Hisn triage tools."""
+
+from typing import Any
 
 from mcp.server import MCPServer
 
+from hisn import retrieval, tools
+
 server = MCPServer("hisn-triage")
 
-# You write: register lookup_asset, search_runbooks and related_alerts as tools on `server`
-# with @server.tool(), using `hisn.tools` and `hisn.retrieval.search_runbooks` underneath. Each
-# tool needs the same name and parameters as in tools.py, and a non-empty docstring (the SDK
-# builds the tool's description from it and its JSON schema from the type hints).
-#
-# If an AI assistant writes `from mcp.server.fastmcp import FastMCP` here, that is v1 code: it
-# will not import under mcp 2.2.0. Use `MCPServer` as above, and say so in AI_USAGE.md.
+
+@server.tool()
+def lookup_asset(host: str) -> dict[str, Any]:
+    """Look up a host's owner, criticality and environment."""
+    return tools.lookup_asset(host)
+
+
+@server.tool()
+def search_runbooks(query: str, k: int = 3) -> list[dict[str, Any]]:
+    """Search the incident runbooks and return the best matches."""
+    return retrieval.search_runbooks(query, k)
+
+
+@server.tool()
+def related_alerts(rule_id: str, agent: str, around: str, window_minutes: int = 60) -> dict[str, Any]:
+    """Count alerts with the same rule and agent in the minutes before a time."""
+    return tools.related_alerts(rule_id, agent, around, window_minutes)
 
 
 if __name__ == "__main__":
-    server.run()  # stdio transport by default
+    server.run()
